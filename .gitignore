@@ -1,2 +1,5 @@
 .venv/
 .vscode/
+GlassdoorScrapper/data/
+GlassdoorScrapper/data_old/
+GlassdoorScrapper/app.log
