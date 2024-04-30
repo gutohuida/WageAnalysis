@@ -3,9 +3,11 @@ import os
 import random
 import logging
 import pandas as pd
+from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+
 
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
 
@@ -34,7 +36,7 @@ PROXY_COUNTRYS = [
     "United States"
 ]
 
-PAGE_TIME_OUT = 10
+PAGE_TIME_OUT = 15
 
 def test_driver(target_url):
     driver=webdriver.Chrome()
@@ -108,7 +110,13 @@ def init_driver(proxy_list=None):
     driver.set_page_load_timeout(PAGE_TIME_OUT)
     return driver
 
-def scrap_glassdoor(driver, proxy_list):
+def creat_db_connection():
+    postgresql_url = 'postgresql+psycopg2://postgres:postgres@localhost:5432/wageanalysis'
+    engine = create_engine(postgresql_url)
+    
+    return engine
+
+def scrap_glassdoor(driver, proxy_list, engine):
     for job in JOBS:
         for country in COUNTRYS:
             country_stat_pd = pd.DataFrame()
@@ -143,7 +151,7 @@ def scrap_glassdoor(driver, proxy_list):
                     'job': job,
                     'estimated_pay': soup.find('h3',{'class':'m-0 css-16zrpia el6ke054'}).text,
                     'period':soup.find('span',{'class':'m-0 css-1in2cw4 el6ke050'}).text,
-                    'update_date': soup.find('span',{'class':'css-1in2cw4 el6ke050'}).text,
+                    'last_update': soup.find('span',{'class':'css-1in2cw4 el6ke050'}).text,
                     'wage_text': soup.find('p',{'class':'css-79elbk m-0 css-1in2cw4 el6ke053'}).find('span').text,
                     'pay_range': soup.find('span',class_='css-uakwcr ebx6x3o1').text,
                     'base_pay': soup.find('div', {'data-test':'base-pay'}).find('span').text,
@@ -209,8 +217,12 @@ def scrap_glassdoor(driver, proxy_list):
 
             time.sleep(1)
             os.makedirs(f'data/{job}/{country}', exist_ok=True)  
-            country_stat_pd.to_csv(f'data/{job}/{country}/general_stats.csv')
-            jobs_df.to_csv(f'data/{job}/{country}/companies.csv')  
+            country_stat_pd.to_sql('country_job_info', engine, schema='raw', if_exists='append', index=False)
+            jobs_df.to_sql('popular_companies', engine, schema='raw', if_exists='append', index=False)
+            #country_stat_pd.to_csv(f'data/{job}/{country}/general_stats.csv')
+            #jobs_df.to_csv(f'data/{job}/{country}/companies.csv')
+
+    
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='app.log', filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -219,7 +231,8 @@ if __name__ == '__main__':
     proxy_list = get_proxy_list(driver)
     driver.close()
     driver = init_driver(proxy_list)
-    scrap_glassdoor(driver, proxy_list)
+    engine = creat_db_connection()
+    scrap_glassdoor(driver, proxy_list, engine)
     logging.info('Glassdoor scrapping finished')
     
 
