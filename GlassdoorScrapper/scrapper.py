@@ -12,28 +12,35 @@ from selenium.webdriver.common.by import By
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
 
 JOBS = [
-    "Software Engineer", "Systems Analyst", "Web Developer", "Network Engineer",
-    "Database Administrator", "Data Scientist", "Security Analyst",
-    "Cloud Solutions Architect", "DevOps Engineer", "Mobile App Developer",
-    "Machine Learning Engineer", "UX/UI Designer", "Quality Assurance Engineer",
-    "IT Project Manager", "Technical Support Specialist", "IT Consultant",
+    "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 
+    "Network Engineer", "Database Administrator", "Senior Database Administrator", "Data Scientist", "Security Analyst",
+    "Cloud Engineer", "DevOps Engineer", "Mobile Developer", "Senior Mobile Developer",
+    "Machine Learning Engineer", "UX/UI Designer", "Quality Engineer",
+    "Project Manager", "Senior Project Manager", "Technical Support Specialist", "IT Consultant",
     "Game Developer", "Computer Vision Engineer", "AI Research Scientist",
-    "Blockchain Developer", "IoT Developer", "Ethical Hacker", "Data Engineer", "Data Analyst"
+    "Blockchain Developer", "IoT Developer", "Ethical Hacker", "Data Engineer", "Senior Data Engineer",
+    "Data Analyst", "Senior Data Analyst", "Full Stack Developer"
  ]
+#"Mobile Developer", "Quality Engineer", "Project Manager", Cloud Solutions Architect
+
 
 COUNTRYS = [
-    "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic",
-    "Denmark", "Estonia", "Finland", "France", "Germany", "Greece", "Hungary",
-    "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Netherlands",
-    "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden"
+    "Germany", "United Kingdom", "France", "Italy", "Russia", "Spain",
+    "Netherlands", "Switzerland", "Turkey", "Sweden", "Poland", "Belgium",
+    "Austria", "Ireland", "Norway", "Denmark", "Finland", "Portugal",
+    "Czech Republic", "Greece", "Romania", "Hungary", "Slovakia", "Luxembourg",
+    "Bulgaria", "Croatia", "Lithuania", "Slovenia", "Latvia", "Estonia",
+    "Cyprus", "Malta", "Iceland", "Bosnia and Herzegovina", "Albania",
+    "North Macedonia", "Moldova", "Montenegro", "Serbia", "Belarus",
+    "Ukraine", "United States", "Canada", "Mexico", "Brazil", "Argentina", "Colombia",
+    "China", "India", "Japan", "South Korea", "Saudi Arabia", "Iran", "Israel", "Turkey",
+    "Nigeria", "South Africa", "Egypt", "Ethiopia", "Australia", "New Zealand"
 ]
 
+
+
 PROXY_COUNTRYS = [
-    # "Austria", "Belgium", "Bulgaria", "Croatia", "Cyprus", "Czech Republic",
-    # "Denmark", "Estonia", "Finland", "France", "Greece", "Hungary",
-    # "Ireland", "Italy", "Latvia", "Lithuania", "Luxembourg", "Malta",
-    # "Poland", "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
-    "United States"
+    "United States", "Canada"
 ]
 
 PAGE_TIME_OUT = 15

@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: raw
+    database: wageanalysis  
+    schema: raw  
+    tables:
+      - name: country_job_info
+      - name: popular_companies
