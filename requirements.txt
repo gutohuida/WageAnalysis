@@ -2,3 +2,4 @@ selenium==4.19.0
 beautifulsoup4==4.12.3
 SQLAlchemy==2.0.29
 psycopg2-binary==2.9.9
+dbt-postgres==1.7.13

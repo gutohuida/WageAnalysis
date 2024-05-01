@@ -216,9 +216,12 @@ def scrap_glassdoor(driver, proxy_list, engine):
                 break            
 
             time.sleep(1)
-            os.makedirs(f'data/{job}/{country}', exist_ok=True)  
-            country_stat_pd.to_sql('country_job_info', engine, schema='raw', if_exists='append', index=False)
-            jobs_df.to_sql('popular_companies', engine, schema='raw', if_exists='append', index=False)
+            #os.makedirs(f'data/{job}/{country}', exist_ok=True)  
+            try:
+                country_stat_pd.to_sql('country_job_info', engine, schema='raw', if_exists='append', index=False)
+                jobs_df.to_sql('popular_companies', engine, schema='raw', if_exists='append', index=False)
+            except Exception as e:
+                logging.error(f'{job} - {country} - Failed to load data: {e}')    
             #country_stat_pd.to_csv(f'data/{job}/{country}/general_stats.csv')
             #jobs_df.to_csv(f'data/{job}/{country}/companies.csv')
 

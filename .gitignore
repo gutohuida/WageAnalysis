@@ -2,4 +2,7 @@
 .vscode/
 GlassdoorScrapper/data/
 GlassdoorScrapper/data_old/
-GlassdoorScrapper/app.log
+app.log
+target/
+dbt_packages/
+logs/
