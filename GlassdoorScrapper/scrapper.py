@@ -23,7 +23,6 @@ JOBS = [
  ]
 #"Mobile Developer", "Quality Engineer", "Project Manager", Cloud Solutions Architect
 
-
 COUNTRYS = [
     "Germany", "United Kingdom", "France", "Italy", "Russia", "Spain",
     "Netherlands", "Switzerland", "Turkey", "Sweden", "Poland", "Belgium",
@@ -36,8 +35,6 @@ COUNTRYS = [
     "China", "India", "Japan", "South Korea", "Saudi Arabia", "Iran", "Israel", "Turkey",
     "Nigeria", "South Africa", "Egypt", "Ethiopia", "Australia", "New Zealand"
 ]
-
-
 
 PROXY_COUNTRYS = [
     "United States", "Canada"
@@ -66,11 +63,11 @@ def test_proxy(driver):
 def get_proxy_list(driver):
     logging.info('scrapping poxys')
     for attempt in range(5):
-        driver.get('https://free-proxy-list.net/')
-        page = driver.page_source
-        soup = BeautifulSoup(page, 'html.parser')
-
         try:
+            driver.get('https://free-proxy-list.net/')
+            page = driver.page_source
+            soup = BeautifulSoup(page, 'html.parser')
+
             proxy_table = soup.find('table', class_='table table-striped table-bordered').find('tbody')
         except Exception as e:
             logging.error(f'GET PROXY LIST: {e}')
@@ -230,9 +227,7 @@ def scrap_glassdoor(driver, proxy_list, engine):
             except Exception as e:
                 logging.error(f'{job} - {country} - Failed to load data: {e}')    
             #country_stat_pd.to_csv(f'data/{job}/{country}/general_stats.csv')
-            #jobs_df.to_csv(f'data/{job}/{country}/companies.csv')
-
-    
+            #jobs_df.to_csv(f'data/{job}/{country}/companies.csv')    
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='app.log', filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
