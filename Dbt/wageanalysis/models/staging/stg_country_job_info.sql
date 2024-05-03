@@ -3,8 +3,9 @@
 with treated as (
 select 
     country, 
+    substring(substring(wage_text, 'in the .* area'), '(?<=the\s)(.*)(?=\sarea)') as country_found,
     job, 
-    trim(substring(estimated_pay, '^(\D+)')) as currency,
+    trim(replace(substring(estimated_pay, '^(\D+)'), chr(160), '')) as currency,
 	cast(substring(estimated_pay, '\d+') as numeric) as pay,
 	substring(estimated_pay, '(\D+)$') as number_format, 
     right("period",2) as "period", 
@@ -37,7 +38,18 @@ select distinct
     country,
     job,
     case
-        when currency = '€' then 'EUR'
+        when currency = '$'   then 'USD'
+        when currency = '£'   then 'GBP'
+        when currency = '€'   then 'EUR'
+        when currency = '₩'   then 'KRW'
+        when currency = '₪'   then 'ILS'
+        when currency = '¥'   then 'JPY'
+        when currency = 'A$'  then 'AUD'
+        when currency = 'R$'  then 'BRL'
+        when currency = 'CA$' then 'CAD'
+        when currency = 'CN¥' then 'CNY'
+        when currency = 'MX$' then 'MXN'
+        when currency = 'NZ$' then 'NZD'
         else currency
     end as currency,
     case
@@ -80,3 +92,4 @@ select distinct
         else additional_pay_max
     end as additional_pay_max
 from treated
+where country = country_found

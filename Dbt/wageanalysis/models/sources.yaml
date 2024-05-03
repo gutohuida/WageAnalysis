@@ -7,3 +7,5 @@ sources:
     tables:
       - name: country_job_info
       - name: popular_companies
+      - name: countrys
+      - name: currency_exchange

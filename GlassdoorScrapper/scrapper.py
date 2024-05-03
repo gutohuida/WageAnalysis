@@ -1,5 +1,4 @@
-import time
-import os  
+import time 
 import random
 import logging
 import pandas as pd
@@ -10,6 +9,9 @@ from selenium.webdriver.common.by import By
 
 
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
+
+EXCHANGE_CURRENCY = "USD"
+EXCHANGE_API = f"https://open.er-api.com/v6/latest/{EXCHANGE_CURRENCY}"
 
 JOBS = [
     "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 
@@ -29,10 +31,9 @@ COUNTRYS = [
     "Austria", "Ireland", "Norway", "Denmark", "Finland", "Portugal",
     "Czech Republic", "Greece", "Romania", "Hungary", "Slovakia", "Luxembourg",
     "Bulgaria", "Croatia", "Lithuania", "Slovenia", "Latvia", "Estonia",
-    "Cyprus", "Malta", "Iceland", "Bosnia and Herzegovina", "Albania",
-    "North Macedonia", "Moldova", "Montenegro", "Serbia", "Belarus",
+    "Cyprus", "Iceland", "Bosnia and Herzegovina", "Albania", "Moldova", "Serbia", 
     "Ukraine", "United States", "Canada", "Mexico", "Brazil", "Argentina", "Colombia",
-    "China", "India", "Japan", "South Korea", "Saudi Arabia", "Iran", "Israel", "Turkey",
+    "China", "Japan", "South Korea", "Saudi Arabia", "Iran", "Israel", "Turkey",
     "Nigeria", "South Africa", "Egypt", "Ethiopia", "Australia", "New Zealand"
 ]
 
@@ -125,6 +126,8 @@ def scrap_glassdoor(driver, proxy_list, engine):
         for country in COUNTRYS:
             country_stat_pd = pd.DataFrame()
             jobs_df = pd.DataFrame()
+            country_stats = {}
+            jobs_anex = {}
 
             for attempt in range(10):
                 try:
@@ -148,6 +151,7 @@ def scrap_glassdoor(driver, proxy_list, engine):
                 break
 
             try:
+                
                 aditional_pay = soup.find('div', {'data-test':'additional-pay-breakdown-only-one'}).find('span') if soup.find('div', {'data-test':'additional-pay-breakdown-only-one'}) else None
 
                 country_stats = {
@@ -229,6 +233,32 @@ def scrap_glassdoor(driver, proxy_list, engine):
             #country_stat_pd.to_csv(f'data/{job}/{country}/general_stats.csv')
             #jobs_df.to_csv(f'data/{job}/{country}/companies.csv')    
 
+def get_exchange(engine):
+    import requests
+    import ast
+    from datetime import datetime, timezone
+
+    try:
+        usd_exchange = requests.get(EXCHANGE_API)
+    except Exception as e:
+        logging.error(f"Could not get exchange rate USD: {e}")
+        return
+        
+    currency_exchange = pd.DataFrame()
+    result_dict = ast.literal_eval(usd_exchange.content.decode('utf-8'))
+
+    for key in result_dict["rates"]:
+        line = {
+            "currency": key,
+            "exchange_rate": result_dict["rates"][key],
+            "insert_date": datetime.now().astimezone(timezone.utc)
+        }
+        currency_exchange = pd.concat([currency_exchange, pd.DataFrame(line, index=[0])], ignore_index=True)
+
+    currency_exchange.to_sql('currency_exchange', engine, schema='raw', if_exists='append', index=False)
+        
+        
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, filename='app.log', filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('Starting glassdoor scrapping')
@@ -239,6 +269,9 @@ if __name__ == '__main__':
     engine = creat_db_connection()
     scrap_glassdoor(driver, proxy_list, engine)
     logging.info('Glassdoor scrapping finished')
+    logging.info('Getting currency exchange for the day')
+    get_exchange(engine)
+    
     
 
 

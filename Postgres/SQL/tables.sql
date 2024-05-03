@@ -2,7 +2,7 @@ drop table if exists raw.country_job_info;
 create table raw.country_job_info (
 	country varchar(50),
 	job varchar(100),
-	estimated_pay varchar(20),
+	estimated_pay varchar(50),
 	period varchar(10),
 	last_update varchar(50),
 	wage_text text,
@@ -18,10 +18,11 @@ drop table if exists raw.popular_companies;
 create table raw.popular_companies (
 	country varchar(50),
 	job varchar(100),
+	wage_text text,
 	company varchar(100),
 	score varchar(3),
-	open_jobs varchar(20),
-	data_collected varchar(20),
+	open_jobs varchar(50),
+	data_collected varchar(50),
 	min varchar(15),
 	max varchar(15),
 	likely varchar(15),
