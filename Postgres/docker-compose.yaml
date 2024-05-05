@@ -10,6 +10,12 @@ services:
       - '5432:5432'
     volumes: 
       - db:/var/lib/postgresql/data
+    networks:
+      - postgres_default  
 volumes:
   db:
     driver: local
+
+networks:
+  postgres_default:
+    external: true
