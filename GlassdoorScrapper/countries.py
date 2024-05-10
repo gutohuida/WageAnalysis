@@ -1,0 +1,128 @@
+SA_COUNTRIES = [
+    "Brazil",
+    "Paraguay",
+    "Peru",
+    "Bolivia",
+    "Ecuador",
+    "Colombia",
+    "Argentina",
+    "Chile",
+    "Venezuela",
+    "Uruguay"
+]
+
+OCE_COUNTRIES = [
+    "New Zealand",
+    "Australia"
+]
+
+NA_COUNTRIES = [
+    "Mexico",
+    "Costa Rica",
+    "Honduras",
+    "Puerto Rico",
+    "Dominican Republic",
+    "Jamaica",
+    "Nicaragua",
+    "Greenland",
+    "United States of America",
+    "Panama",
+    "Guatemala",
+    "Canada"
+]
+
+EU_COUNTRIES = [
+    "Germany",
+    "United Kingdom",
+    "France",
+    "Italy",
+    "Russia",
+    "Spain",
+    "Netherlands",
+    "Turkey",
+    "Switzerland",
+    "Poland",
+    "Belgium",
+    "Sweden",
+    "Ireland",
+    "Austria",
+    "Norway",
+    "Denmark",
+    "Romania",
+    "Czech Republic",
+    "Finland",
+    "Portugal",
+    "Kazakhstan",
+    "Greece",
+    "Hungary",
+    "Ukraine",
+    "Slovakia",
+    "Bulgaria",
+    "Luxembourg",
+    "Croatia",
+    "Serbia",
+    "Lithuania",
+    "Slovenia",
+    "Azerbaijan",
+    "Belarus",
+    "Latvia",
+    "Estonia",
+    "Cyprus",
+    "Iceland",
+    "Georgia",
+    "Bosnia and Herzegovina",
+    "Albania"
+]
+
+ASIAN_COUNTRIES = [
+    "China",
+    "Japan",
+    "India",
+    "South Korea",
+    "Indonesia",
+    "Turkey",
+    "Saudi Arabia",
+    "Taiwan",
+    "Thailand",
+    "Singapore",
+    "United Arab Emirates",
+    "Israel",
+    "Philippines",
+    "Bangladesh",
+    "Malaysia",
+    "Iran",
+    "Hong Kong",
+    "Vietnam",
+    "Pakistan",
+    "Iraq",
+    "Kazakhstan",
+    "Qatar",
+    "Kuwait"
+]
+
+AF_COUNTRIES = [
+    "South Africa",
+    "Egypt",
+    "Algeria",
+    "Nigeria",
+    "Ethiopia",
+    "Morocco",
+    "Kenya",
+    "Angola",
+    "Côte d'Ivoire",
+    "Tanzania",
+    "Ghana",
+    "Democratic Republic of the Congo",
+    "Uganda",
+    "Tunisia",
+    "Cameroon",
+    "Libya",
+    "Senegal",
+    "Zimbabwe",
+    "Zambia",
+    "Sudan",
+    "Guinea",
+    "Mozambique",
+    "Burkina Faso"
+]
+

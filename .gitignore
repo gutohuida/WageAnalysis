@@ -8,3 +8,4 @@ dbt_packages/
 logs/
 .ipynb_checkpoints/
 posts/
+__pycache__/
