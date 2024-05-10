@@ -10,8 +10,8 @@ from selenium.webdriver.common.by import By
 
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
 
-EXCHANGE_CURRENCY = "USD"
-EXCHANGE_API = f"https://open.er-api.com/v6/latest/{EXCHANGE_CURRENCY}"
+EXCHANGE_CURRENCY = ["USD", "BRL"]
+EXCHANGE_API = [f"https://open.er-api.com/v6/latest/{x}" for x in EXCHANGE_CURRENCY]
 
 JOBS = [
     "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 
@@ -237,25 +237,25 @@ def get_exchange(engine):
     import requests
     import ast
     from datetime import datetime, timezone
+    for api in EXCHANGE_API:
+        try:
+            usd_exchange = requests.get(api)
+        except Exception as e:
+            logging.error(f"Could not get exchange rate USD: {e}")
+            return
+            
+        currency_exchange = pd.DataFrame()
+        result_dict = ast.literal_eval(usd_exchange.content.decode('utf-8'))
 
-    try:
-        usd_exchange = requests.get(EXCHANGE_API)
-    except Exception as e:
-        logging.error(f"Could not get exchange rate USD: {e}")
-        return
-        
-    currency_exchange = pd.DataFrame()
-    result_dict = ast.literal_eval(usd_exchange.content.decode('utf-8'))
+        for key in result_dict["rates"]:
+            line = {
+                "currency": key,
+                "exchange_rate": result_dict["rates"][key],
+                "insert_date": datetime.now().astimezone(timezone.utc)
+            }
+            currency_exchange = pd.concat([currency_exchange, pd.DataFrame(line, index=[0])], ignore_index=True)
 
-    for key in result_dict["rates"]:
-        line = {
-            "currency": key,
-            "exchange_rate": result_dict["rates"][key],
-            "insert_date": datetime.now().astimezone(timezone.utc)
-        }
-        currency_exchange = pd.concat([currency_exchange, pd.DataFrame(line, index=[0])], ignore_index=True)
-
-    currency_exchange.to_sql('currency_exchange', engine, schema='raw', if_exists='append', index=False)
+        currency_exchange.to_sql('currency_exchange', engine, schema='raw', if_exists='append', index=False)
         
         
 
