@@ -1,29 +1,40 @@
 import time 
 import random
 import pandas as pd
+from datetime import datetime
 from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from prefect import flow, task, get_run_logger
+from prefect import flow, task, get_run_logger, serve
 
 from countries import AF_COUNTRIES, ASIAN_COUNTRIES, EU_COUNTRIES, NA_COUNTRIES, OCE_COUNTRIES, SA_COUNTRIES
 
 ## DECLARES ##
-REGION = 'EU'
+ENV = 'PROD'
+
+DAY_OF_WEEK = datetime.today().weekday()
+
+if DAY_OF_WEEK == 6:
+    REGION = 'EU'
+elif DAY_OF_WEEK == 0:
+    REGION = 'NA'
+elif DAY_OF_WEEK == 1:
+    REGION = 'SA'
+elif DAY_OF_WEEK == 2:
+    REGION = 'ASIA'
+else:            
+    REGION = 'AF'
 
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
 
-PAGE_TIME_OUT = 15
+PAGE_TIME_OUT = 30
 
 PROXY_COUNTRIES = [
     "United States", "Canada"
 ]
 
 CONNECTION_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/wageanalysis"
-
-EXCHANGE_CURRENCY = ["USD", "BRL"]
-EXCHANGE_API = [(f"https://open.er-api.com/v6/latest/{x}", x) for x in EXCHANGE_CURRENCY]
 
 JOBS = [
     "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 
@@ -32,22 +43,25 @@ JOBS = [
     "Machine Learning Engineer", "UX/UI Designer", "Quality Engineer",
     "Project Manager", "Senior Project Manager", "Technical Support Specialist", "IT Consultant",
     "Game Developer", "Computer Vision Engineer", "AI Research Scientist",
-    "Blockchain Developer", "IoT Developer", "Ethical Hacker", "Data Engineer", "Senior Data Engineer",
-    "Data Analyst", "Senior Data Analyst", "Full Stack Developer"
- ]
+    "Data Engineer", "Senior Data Engineer", "Data Analyst", "Senior Data Analyst", "Full Stack Developer"
+    ]
+
+REMOVED_JOBS = ["Blockchain Developer", "IoT Developer", "Ethical Hacker"]
 
 if REGION == 'EU':
     COUNTRIES = EU_COUNTRIES
 elif REGION == 'NA':
-    COUNTRIES = NA_COUNTRIES
+    COUNTRIES = NA_COUNTRIES + OCE_COUNTRIES
 elif REGION == 'SA':
     COUNTRIES = SA_COUNTRIES
 elif REGION == 'ASIA':
     COUNTRIES = ASIAN_COUNTRIES
-elif REGION == 'OCE':
-    COUNTRIES = OCE_COUNTRIES
 else:
-    COUNTRIES = AF_COUNTRIES                    
+    COUNTRIES = AF_COUNTRIES  
+
+if ENV == 'DEV':
+    JOBS = ["Data Engineer"]
+    COUNTRIES = ["Portugal"]                      
 
 ## TASKS ##
 @task
@@ -97,7 +111,7 @@ def init_driver(proxy_list=None, driver=None):
         random_proxy = random.choice(proxy_list)
         logging.info(f'Proxy: {random_proxy}') 
         chrome_options.add_argument(f'--proxy-server={random_proxy[0]}') 
-        driver = webdriver.Chrome('/snap/bin/chromium', options=chrome_options)
+        driver = webdriver.Chrome(options=chrome_options)
         
     else:
         driver = webdriver.Chrome()          
@@ -137,36 +151,42 @@ def scrap_country_info(soup, country, job):
     return country_stats
 
 @task
-def scrap_jobs(popular_job, country, job, wage_text):
-    jobs_anex = {}
-    open_jobs_aux = popular_job.find('div', class_='col-12 col-md-3 col-lg-3 d-none d-lg-block align-self-start')  
-    min_aux = popular_job.find('div', class_='d-flex flex-column align-items-end css-15o6gsn e13r6qcv5')
-    max_aux = popular_job.find('div', class_='d-flex flex-column align-items-end css-1qfy6mj e13r6qcv5')
-    period_aux = popular_job.find('div', class_='mb-xxsm d-flex align-items-baseline css-3tpw1n e13r6qcv1')
+def scrap_jobs(popular_jobs, country, job, wage_text):
+    logging = get_run_logger()
+    for popular_job in popular_jobs:
+        jobs_anex = {}
+        try:            
+            open_jobs_aux = popular_job.find('div', class_='col-12 col-md-3 col-lg-3 d-none d-lg-block align-self-start')  
+            min_aux = popular_job.find('div', class_='d-flex flex-column align-items-end css-15o6gsn e13r6qcv5')
+            max_aux = popular_job.find('div', class_='d-flex flex-column align-items-end css-1qfy6mj e13r6qcv5')
+            period_aux = popular_job.find('div', class_='mb-xxsm d-flex align-items-baseline css-3tpw1n e13r6qcv1')
 
-    company = popular_job.find('a', class_='css-1ikln7a el6ke052').text
-    score = popular_job.find('span', class_='css-h9sogr m-0 css-60s9ld el6ke050')
-    open_jobs = open_jobs_aux.find('span') if open_jobs_aux else None                          
-    data_collected =  popular_job.find('a', class_='m-0 d-flex css-259095 e1aj7ssy6')
-    min = min_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if min_aux else None
-    max = max_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if max_aux else None
-    likely = popular_job.find('h3', class_='m-0 css-16zrpia el6ke054')
-    period = period_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if period_aux else None
+            company = popular_job.find('a', class_='css-1ikln7a el6ke052').text
+            score = popular_job.find('span', class_='css-h9sogr m-0 css-60s9ld el6ke050')
+            open_jobs = open_jobs_aux.find('span') if open_jobs_aux else None                          
+            data_collected =  popular_job.find('a', class_='m-0 d-flex css-259095 e1aj7ssy6')
+            min = min_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if min_aux else None
+            max = max_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if max_aux else None
+            likely = popular_job.find('h3', class_='m-0 css-16zrpia el6ke054')
+            period = period_aux.find('span', class_='m-0 css-1in2cw4 el6ke050') if period_aux else None
 
-    jobs_anex = {
-        'country': country,
-        'job': job,
-        'wage_text': wage_text,
-        'company': company,
-        'score': score.text if score else None,
-        'open_jobs': open_jobs.text if open_jobs else None,
-        'data_collected': data_collected.text if data_collected else None,
-        'min': min.text if min else None,
-        'max': max.text if max else None,
-        'likely': likely.text if likely else None,
-        'period': period.text if period else None
-    }
-    return jobs_anex, company
+            jobs_anex = {
+                'country': country,
+                'job': job,
+                'wage_text': wage_text,
+                'company': company,
+                'score': score.text if score else None,
+                'open_jobs': open_jobs.text if open_jobs else None,
+                'data_collected': data_collected.text if data_collected else None,
+                'min': min.text if min else None,
+                'max': max.text if max else None,
+                'likely': likely.text if likely else None,
+                'period': period.text if period else None
+            }
+        except Exception as e:
+            logging.error(f'scrap_glassdoor: {job} - {country} - {company} Msg: {e}')
+    
+    return jobs_anex
 
 @task
 def scrap_glassdoor(driver, proxy_list, engine):
@@ -213,7 +233,6 @@ def scrap_glassdoor(driver, proxy_list, engine):
             except Exception as e:    
                 logging.error(f'{e}')
                 
-
             country_stat_pd = pd.concat([country_stat_pd, pd.DataFrame(country_stats, index=[0])], ignore_index=True)
 
             for attempt in range(5):
@@ -224,18 +243,19 @@ def scrap_glassdoor(driver, proxy_list, engine):
                     logging.error(f'No jobs block found for {job} in {country} - {e}')
                     continue    
                         
-                for popular_job in popular_jobs:
-                    try:
-                        jobs_anex, company = scrap_jobs(popular_job, country, job, wage_text)
-                        jobs_df = pd.concat([jobs_df, pd.DataFrame(jobs_anex, index=[0])], ignore_index=True)
-
-                    except Exception as e:
-                        logging.error(f'scrap_glassdoor: {job} - {country} - {company} Msg: {e}')
+                jobs_anex = scrap_jobs(popular_jobs, country, job, wage_text)
+                if jobs_anex:
+                    jobs_df = pd.concat([jobs_df, pd.DataFrame(jobs_anex, index=[0])], ignore_index=True)                   
             
                 break            
 
             time.sleep(1)
-             
+
+            if ENV == 'DEV':
+                logging.info(country_stat_pd.head())
+                logging.info(jobs_df.head())
+                return True
+
             try:
                 country_stat_pd.to_sql('country_job_info', engine, schema='raw', if_exists='append', index=False)
                 jobs_df.to_sql('popular_companies', engine, schema='raw', if_exists='append', index=False)
@@ -247,43 +267,22 @@ def scrap_glassdoor(driver, proxy_list, engine):
 def glassdoor_scrapper(retries=3, retry_delay_seconds=5, log_prints=True):
     logging = get_run_logger()
     logging.info('Starting glassdoor scrapping')
+    logging.info(f'Running for region: {REGION} - countries: {COUNTRIES} - jobs: {JOBS} - env: {ENV}')
     driver = init_driver()
     proxy_list = get_proxy_list(driver)
     driver = init_driver(proxy_list, driver)
     engine = creat_db_connection()
-    scrap_glassdoor(driver, proxy_list, engine)
-
-@flow
-def get_exchange():
-    import requests
-    import ast
-    from datetime import datetime, timezone
-    logging = get_run_logger()
-    logging.info('Getting currency exchange for the day')
-    engine = creat_db_connection()
-    for api in EXCHANGE_API:
-        try:
-            usd_exchange = requests.get(api[0])
-        except Exception as e:
-            logging.error(f"Could not get exchange rate USD: {e}")
-            return
-            
-        currency_exchange = pd.DataFrame()
-        result_dict = ast.literal_eval(usd_exchange.content.decode('utf-8'))
-
-        for key in result_dict["rates"]:
-            line = {
-                "currency_from": key,
-                "currency_to": api[1],
-                "exchange_rate": result_dict["rates"][key],
-                "insert_date": datetime.now().astimezone(timezone.utc)
-            }
-            currency_exchange = pd.concat([currency_exchange, pd.DataFrame(line, index=[0])], ignore_index=True)
-
-        currency_exchange.to_sql('currency_exchange', engine, schema='raw', if_exists='append', index=False)
-    
+    state = scrap_glassdoor(driver, proxy_list, engine, return_state=True)
+    state.result(raise_on_failure=False)
+    return True
 
 
 if __name__ == "__main__":
-    glassdoor_scrapper()
-    get_exchange()
+    glassdoor_scrapper.serve(
+        name="scrapp-glassdoor-salarys",
+        cron="45 23 * * 0-4",
+        tags=["scrapper", "wage-analysis"],
+        description="Scrap glassdoor daily.",
+        version="wage-analysis/deployment",
+    )
+    
