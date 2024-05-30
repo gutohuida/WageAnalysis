@@ -48,7 +48,7 @@ def get_exchange():
 if __name__ == "__main__":
     get_exchange.serve(
         name="get-exchange",
-        cron="30 23 * * 0-4",
+        cron="30 22 * * 0-4",
         tags=["exchange", "wage-analysis"],
         description="Get the exchange value for BRL and USD daily.",
         version="wage-analysis/deployment",

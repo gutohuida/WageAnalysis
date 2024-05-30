@@ -289,7 +289,7 @@ def glassdoor_scrapper(retries=3, retry_delay_seconds=5, log_prints=True):
 if __name__ == "__main__":
     glassdoor_scrapper.serve(
         name="scrapp-glassdoor-salarys",
-        cron="45 23 * * 0-4",
+        cron="45 22 * * 0-4",
         tags=["scrapper", "wage-analysis"],
         description="Scrap glassdoor daily.",
         version="wage-analysis/deployment",
