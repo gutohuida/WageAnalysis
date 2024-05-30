@@ -6,12 +6,13 @@ from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from prefect import flow, task, get_run_logger, serve
+from prefect import flow, task, get_run_logger
 
 from countries import AF_COUNTRIES, ASIAN_COUNTRIES, EU_COUNTRIES, NA_COUNTRIES, OCE_COUNTRIES, SA_COUNTRIES
 
 ## DECLARES ##
 ENV = 'PROD'
+FULL_LOAD = False
 
 DAY_OF_WEEK = datetime.today().weekday()
 
@@ -23,8 +24,10 @@ elif DAY_OF_WEEK == 1:
     REGION = 'SA'
 elif DAY_OF_WEEK == 2:
     REGION = 'ASIA'
-else:            
+elif DAY_OF_WEEK == 3:            
     REGION = 'AF'
+else:
+    REGION = 'GLOBAL'    
 
 MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
 
@@ -41,7 +44,7 @@ JOBS = [
     "Network Engineer", "Database Administrator", "Senior Database Administrator", "Data Scientist", "Senior Data Scientist", "Security Analyst",
     "Cloud Engineer", "DevOps Engineer", "Mobile Developer", "Senior Mobile Developer",
     "Machine Learning Engineer", "UX/UI Designer", "Quality Engineer",
-    "Project Manager", "Senior Project Manager", "Technical Support Specialist", "IT Consultant",
+    "IT Project Manager", "Senior Project Manager", "Technical Support Specialist", "IT Consultant",
     "Game Developer", "Computer Vision Engineer", "AI Research Scientist",
     "Data Engineer", "Senior Data Engineer", "Data Analyst", "Senior Data Analyst", "Full Stack Developer"
     ]
@@ -56,8 +59,11 @@ elif REGION == 'SA':
     COUNTRIES = SA_COUNTRIES
 elif REGION == 'ASIA':
     COUNTRIES = ASIAN_COUNTRIES
-else:
+elif REGION == 'AF':
     COUNTRIES = AF_COUNTRIES  
+elif REGION == 'GLOBAL' and FULL_LOAD:
+    COUNTRIES = EU_COUNTRIES + NA_COUNTRIES + OCE_COUNTRIES + SA_COUNTRIES + ASIAN_COUNTRIES + AF_COUNTRIES
+       
 
 if ENV == 'DEV':
     JOBS = ["Data Engineer"]
@@ -153,6 +159,7 @@ def scrap_country_info(soup, country, job):
 @task
 def scrap_jobs(popular_jobs, country, job, wage_text):
     logging = get_run_logger()
+    jobs_list = []
     for popular_job in popular_jobs:
         jobs_anex = {}
         try:            
@@ -185,18 +192,21 @@ def scrap_jobs(popular_jobs, country, job, wage_text):
             }
         except Exception as e:
             logging.error(f'scrap_glassdoor: {job} - {country} - {company} Msg: {e}')
-    
-    return jobs_anex
+
+        if jobs_anex:
+            jobs_list.append(jobs_anex)
+
+    jobs_df = pd.DataFrame(jobs_list) 
+
+    return jobs_df
 
 @task
 def scrap_glassdoor(driver, proxy_list, engine):
     logging = get_run_logger()
     for job in JOBS:
         for country in COUNTRIES:
-            country_stat_pd = pd.DataFrame()
-            jobs_df = pd.DataFrame()
+            country_stat_pd = pd.DataFrame()            
             country_stats = {}
-            jobs_anex = {}
 
             for attempt in range(10):
                 try:
@@ -243,9 +253,7 @@ def scrap_glassdoor(driver, proxy_list, engine):
                     logging.error(f'No jobs block found for {job} in {country} - {e}')
                     continue    
                         
-                jobs_anex = scrap_jobs(popular_jobs, country, job, wage_text)
-                if jobs_anex:
-                    jobs_df = pd.concat([jobs_df, pd.DataFrame(jobs_anex, index=[0])], ignore_index=True)                   
+                jobs_df = scrap_jobs(popular_jobs, country, job, wage_text)                                 
             
                 break            
 
@@ -274,6 +282,7 @@ def glassdoor_scrapper(retries=3, retry_delay_seconds=5, log_prints=True):
     engine = creat_db_connection()
     state = scrap_glassdoor(driver, proxy_list, engine, return_state=True)
     state.result(raise_on_failure=False)
+    driver.quit()
     return True
 
 
