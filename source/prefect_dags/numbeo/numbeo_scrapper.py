@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from prefect import flow, task, get_run_logger
 
 # Application-specific imports
 from prefect_dags.common.countries import (
@@ -69,74 +70,114 @@ elif REGION == 'GLOBAL' and FULL_LOAD:
        
 
 if ENV == 'DEV':
-    COUNTRY = "Portugal"      
-    
-driver = webdriver.Chrome()
-driver.maximize_window()
+    COUNTRY = "Portugal" 
+    COUNTRIES = EU_COUNTRIES     
 
-driver.get(MAIN_URL)
+@task
+def init_driver():
+    driver = webdriver.Chrome()
+    return driver
 
-accept_cookies = driver.find_element(By.ID,'accept-choices')
+@task    
+def scrap_summary(soup):
+    logging = get_run_logger()
+    summary_dict = {}
+    summary_div = soup.find('div', class_='seeding-call table_color summary limit_size_ad_right padding_lower other_highlight_color')
+    summary_list = summary_div.find('ul')
+    summary = summary_list.find_all('li')
 
-accept_cookies.click()
-time.sleep(2)
+    summary_dict['family_of_4'] = summary[0].text
+    summary_dict['single'] = summary[1].text
+    summary_dict['cost_comparison'] = summary[2].text
+    summary_dict['rent_comparison'] = summary[3].text
 
-country = driver.find_element(By.XPATH, f"//a[contains(text(), '{COUNTRY}')]")
+    summary_df = pd.DataFrame([summary_dict])
 
-print(country.text)
-try:
-    country.click()
-except Exception as e:
-    print(e)
+    return summary_df
 
-page = driver.page_source
-soup = BeautifulSoup(page, 'html.parser')
+@task
+def scrap_details(soup):
+    logging = get_run_logger()
+    details = []    
 
-summary_div = soup.find('div', class_='seeding-call table_color summary limit_size_ad_right padding_lower other_highlight_color')
+    discretionary_values_table = soup.find('table', class_='data_wide_table new_bar_table')
+    details_list = discretionary_values_table.find_all('tr')
 
-summary_list = summary_div.find('ul')
-
-summary_list
-
-summary = summary_list.find_all('li')
-summary_dict = {}
-summary_dict['family_of_4'] = summary[0].text
-summary_dict['single'] = summary[1].text
-summary_dict['cost_comparison'] = summary[2].text
-summary_dict['rent_comparison'] = summary[3].text
-
-summary_df = pd.DataFrame([summary_dict])
-
-summary_df.head()
-
-discretionary_values_table = soup.find('table', class_='data_wide_table new_bar_table')
-
-discretionary_values_table
-
-details_list = discretionary_values_table.find_all('tr')
-
-details = []
-for element in details_list:
-    detail_dict = {}
-    if element.find('th'):
-        continue
+    for element in details_list:
+        detail_dict = {}
+        if element.find('th'):
+            continue
+            
+        valid_details = element.find_all('td')
+        detail_dict['country'] = COUNTRY
+        detail_dict['city'] = None
+        detail_dict['type'] = valid_details[0].text
+        detail_dict['amount'] = valid_details[1].text
+        detail_dict['range'] = valid_details[2].text
         
-    valid_details = element.find_all('td')
-    detail_dict['country'] = COUNTRY
-    detail_dict['city'] = None
-    detail_dict['type'] = valid_details[0].text
-    detail_dict['amount'] = valid_details[1].text
-    detail_dict['range'] = valid_details[2].text
+        details.append(detail_dict)
+
+    details_df = pd.DataFrame(details)
+    return details_df
+
+
+@task
+def scrap_numbeo(driver, engine):
+    logging = get_run_logger()
+    for country in COUNTRIES:
+        print('Executing: ', country)
+        driver.get(MAIN_URL)
+
+        try:
+            accept_cookies = driver.find_element(By.ID,'accept-choices')
+            accept_cookies.click()
+            time.sleep(2)
+        except Exception as e:
+            print('No cookies!')
+            print(e)
+
+        try:
+            singn_up = driver.find_element(By.XPATH, "//button[@class='ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only ui-dialog-titlebar-close']")
+            singn_up.click()  
+            time.sleep(2)
+        except Exception as e:
+            print('No Sign up!')
+            print(e)            
+
+
+        country = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
+        country.click()
+
+        page = driver.page_source
+        soup = BeautifulSoup(page, 'html.parser')
+
+        try:
+            summary_df = scrap_summary(soup)
+            details_df = scrap_details(soup)
+        except Exception as e:
+            print(e)        
+
+        details_df.to_sql('country_expenses_detail', engine, schema='raw', if_exists='append', index=False)
+        summary_df.to_sql('country_expenses', engine, schema='raw', if_exists='append', index=False)
+
+
+@flow
+def numbeo_scapper(retries=3, retry_delay_seconds=5, log_prints=True):
+    logging = get_run_logger()
+    driver = init_driver()
+    engine = create_engine(CONNECTION_URL)
+    state = scrap_numbeo(driver, engine, return_state=True)
+    state.result(raise_on_failure=False)
+    driver.quit()
+    return True
+
     
-    details.append(detail_dict)
 
-details_df = pd.DataFrame(details)
-
-details_df.head(10)
-
-postgresql_url = CONNECTION_URL
-engine = create_engine(postgresql_url)
-
-details_df.to_sql('country_expenses_detail', engine, schema='raw', if_exists='replace', index=False)
-
-summary_df.to_sql('country_expenses', engine, schema='raw', if_exists='replace', index=False)
+if __name__ == '__main__':
+    numbeo_scapper.serve(
+        name="scrapp-numbeo-living-cost",
+        cron="00 22 * * 0-4",
+        tags=["scrapper", "living-cost-analysis"],
+        description="Scrap numbeo daily.",
+        version="living-cost-analysis/deployment",
+    )

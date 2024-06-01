@@ -30,3 +30,24 @@ create table raw.popular_companies (
 	insert_date timestamp default (now() at time zone('utc')),
 	update_date timestamp default (now() at time zone('utc'))
 );
+
+DROP TABLE IF EXISTS raw.country_expenses;
+CREATE TABLE raw.country_expenses (
+	family_of_4 text NULL,
+	single text NULL,
+	cost_comparison text NULL,
+	rent_comparison text NULL,
+	insert_date timestamp default (now() at time zone('utc')),
+	update_date timestamp default (now() at time zone('utc'))
+);
+
+DROP TABLE IF EXISTS raw.country_expenses_detail;
+CREATE TABLE raw.country_expenses_detail (
+	country text NULL,
+	city text NULL,
+	"type" text NULL,
+	amount text NULL,
+	"range" text NULL,
+	insert_date timestamp default (now() at time zone('utc')),
+	update_date timestamp default (now() at time zone('utc'))
+);
