@@ -1,14 +1,26 @@
-import time 
+# Standard library imports
+import time
 import random
-import pandas as pd
 from datetime import datetime
+
+# Third-party library imports
+import pandas as pd
 from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from prefect import flow, task, get_run_logger
 
-from countries import AF_COUNTRIES, ASIAN_COUNTRIES, EU_COUNTRIES, NA_COUNTRIES, OCE_COUNTRIES, SA_COUNTRIES
+# Application-specific imports
+from prefect_dags.common.countries import (
+    AF_COUNTRIES,
+    ASIAN_COUNTRIES,
+    EU_COUNTRIES,
+    NA_COUNTRIES,
+    OCE_COUNTRIES,
+    SA_COUNTRIES,
+)
+
 
 ## DECLARES ##
 ENV = 'PROD'
