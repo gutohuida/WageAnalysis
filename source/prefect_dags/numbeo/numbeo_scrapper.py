@@ -81,6 +81,7 @@ def init_driver():
 @task    
 def scrap_summary(soup, country):
     logging = get_run_logger()
+    logging.info('Scrapping summary...')
     summary_dict = {}
     summary_div = soup.find('div', class_='seeding-call table_color summary limit_size_ad_right padding_lower other_highlight_color')
     summary_list = summary_div.find('ul')
@@ -100,6 +101,7 @@ def scrap_summary(soup, country):
 @task
 def scrap_details(soup, country):
     logging = get_run_logger()
+    logging.info('Scrapping details...')
     details = []    
 
     discretionary_values_table = soup.find('table', class_='data_wide_table new_bar_table')
@@ -147,8 +149,8 @@ def scrap_numbeo(driver, engine):
                        
 
         try:
-            country = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
-            country.click()
+            country_button = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
+            country_button.click()
         except Exception as e:
             logging.warning('Country not found!')
             logging.error(e)
