@@ -33,6 +33,8 @@ create table raw.popular_companies (
 
 DROP TABLE IF EXISTS raw.country_expenses;
 CREATE TABLE raw.country_expenses (
+	country text NULL,
+	city text NULL,
 	family_of_4 text NULL,
 	single text NULL,
 	cost_comparison text NULL,

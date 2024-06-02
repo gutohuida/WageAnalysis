@@ -1,4 +1,5 @@
 # Standard library imports
+import os
 import time
 import random
 from datetime import datetime
@@ -9,6 +10,7 @@ from sqlalchemy import create_engine
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from dotenv import load_dotenv
 from prefect import flow, task, get_run_logger
 
 # Application-specific imports
@@ -21,10 +23,11 @@ from prefect_dags.common.countries import (
     SA_COUNTRIES,
 )
 
+load_dotenv()
 
 ## DECLARES ##
-ENV = 'PROD'
-FULL_LOAD = False
+ENV = os.environ.get('ENV')
+FULL_LOAD = os.environ.get('FULL_LOAD')
 
 DAY_OF_WEEK = datetime.today().weekday()
 
@@ -41,15 +44,21 @@ elif DAY_OF_WEEK == 3:
 else:
     REGION = 'GLOBAL'    
 
-MAIN_URL = 'https://www.glassdoor.com/Salaries/index.htm'
+MAIN_URL = os.environ.get('MAIN_URL')
 
-PAGE_TIME_OUT = 30
+PAGE_TIME_OUT = os.environ.get('PAGE_TIME_OUT')
 
 PROXY_COUNTRIES = [
     "United States", "Canada"
 ]
 
-CONNECTION_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/wageanalysis"
+DB_USER = os.environ.get('DB_USER')
+DB_PSSWRD = os.environ.get('DB_PSSWRD')
+DB_HOST = os.environ.get('DB_HOST')
+DB_PORT = os.environ.get('DB_PORT')
+DB_NAME = os.environ.get('DB_NAME')
+
+CONNECTION_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PSSWRD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 JOBS = [
     "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 

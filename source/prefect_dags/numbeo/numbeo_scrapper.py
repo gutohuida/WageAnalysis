@@ -79,13 +79,15 @@ def init_driver():
     return driver
 
 @task    
-def scrap_summary(soup):
+def scrap_summary(soup, country):
     logging = get_run_logger()
     summary_dict = {}
     summary_div = soup.find('div', class_='seeding-call table_color summary limit_size_ad_right padding_lower other_highlight_color')
     summary_list = summary_div.find('ul')
     summary = summary_list.find_all('li')
-
+    
+    summary_dict['country'] = country
+    summary_dict['city'] = None
     summary_dict['family_of_4'] = summary[0].text
     summary_dict['single'] = summary[1].text
     summary_dict['cost_comparison'] = summary[2].text
@@ -96,7 +98,7 @@ def scrap_summary(soup):
     return summary_df
 
 @task
-def scrap_details(soup):
+def scrap_details(soup, country):
     logging = get_run_logger()
     details = []    
 
@@ -109,7 +111,7 @@ def scrap_details(soup):
             continue
             
         valid_details = element.find_all('td')
-        detail_dict['country'] = COUNTRY
+        detail_dict['country'] = country
         detail_dict['city'] = None
         detail_dict['type'] = valid_details[0].text
         detail_dict['amount'] = valid_details[1].text
@@ -125,7 +127,7 @@ def scrap_details(soup):
 def scrap_numbeo(driver, engine):
     logging = get_run_logger()
     for country in COUNTRIES:
-        print('Executing: ', country)
+        logging.info(f'Executing: {country}')
         driver.get(MAIN_URL)
 
         try:
@@ -133,27 +135,30 @@ def scrap_numbeo(driver, engine):
             accept_cookies.click()
             time.sleep(2)
         except Exception as e:
-            print('No cookies!')
-            print(e)
+            logging.info('No cookies!')
+           
 
         try:
             singn_up = driver.find_element(By.XPATH, "//button[@class='ui-button ui-widget ui-state-default ui-corner-all ui-button-icon-only ui-dialog-titlebar-close']")
             singn_up.click()  
             time.sleep(2)
         except Exception as e:
-            print('No Sign up!')
-            print(e)            
+            logging.info('No Sign up!')
+                       
 
-
-        country = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
-        country.click()
+        try:
+            country = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
+            country.click()
+        except Exception as e:
+            logging.warning('Country not found!')
+            logging.error(e)
 
         page = driver.page_source
         soup = BeautifulSoup(page, 'html.parser')
 
         try:
-            summary_df = scrap_summary(soup)
-            details_df = scrap_details(soup)
+            summary_df = scrap_summary(soup, country)
+            details_df = scrap_details(soup, country)
         except Exception as e:
             print(e)        
 

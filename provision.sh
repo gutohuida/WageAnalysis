@@ -9,6 +9,6 @@ prefect server start &
 sleep 20
 cd source
 echo "Deploying code..."
-python -m prefect_dags.glassdoor.scrapper_prefect &
+python -m prefect_dags.glassdoor.glassdoor_scrapper &
 python -m prefect_dags.exchange.get_exchange &
 python -m prefect_dags.numbeo.numbeo_scrapper &
