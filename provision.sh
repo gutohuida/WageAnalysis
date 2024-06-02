@@ -7,6 +7,8 @@ source ./.venv/bin/activate
 echo "Starting prefect server..."
 prefect server start &
 sleep 20
+cd source
 echo "Deploying code..."
-python source/prefect/scrapper_prefect.py &
-python source/prefect/get_exchange.py &
+python -m prefect_dags.glassdoor.glassdoor_scrapper &
+python -m prefect_dags.exchange.get_exchange &
+python -m prefect_dags.numbeo.numbeo_scrapper &
