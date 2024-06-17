@@ -1,6 +1,7 @@
 # Standard library imports
 import os
 import time
+import json
 import random
 from datetime import datetime
 
@@ -27,22 +28,34 @@ load_dotenv()
 
 ## DECLARES ##
 ENV = os.environ.get('ENV')
-FULL_LOAD = os.environ.get('FULL_LOAD')
+EXEC = os.environ.get('EXEC')
+
+
+REGION_DICT = {
+                'EU': EU_COUNTRIES,
+                'NA': NA_COUNTRIES + OCE_COUNTRIES,
+                'SA': SA_COUNTRIES,
+                'AS': ASIAN_COUNTRIES,
+                'AF': AF_COUNTRIES
+            }
+EXECUTION_ORDER = {
+                '6': 'EU',
+                '0': 'NA',
+                '1': 'SA',
+                '2': 'AS',
+                '3': 'AF'
+            }           
 
 DAY_OF_WEEK = datetime.today().weekday()
 
-if DAY_OF_WEEK == 6:
-    REGION = 'EU'
-elif DAY_OF_WEEK == 0:
-    REGION = 'NA'
-elif DAY_OF_WEEK == 1:
-    REGION = 'SA'
-elif DAY_OF_WEEK == 2:
-    REGION = 'ASIA'
-elif DAY_OF_WEEK == 3:            
-    REGION = 'AF'
+COUNTRIES = []
+if EXEC == 'manual':
+    REGION = json.loads(os.environ.get('MANUAL_EXEC'))
+    for region in REGION:
+        COUNTRIES = COUNTRIES + REGION_DICT[region]
 else:
-    REGION = 'GLOBAL'    
+    REGION = EXECUTION_ORDER[DAY_OF_WEEK]
+    COUNTRIES = REGION_DICT[REGION]
 
 MAIN_URL = os.environ.get('MAIN_URL')
 
@@ -64,29 +77,17 @@ JOBS = [
     "Software Engineer", "Senior Software Engineer", "Systems Analyst", "Senior Web Developer","Web Developer", 
     "Network Engineer", "Database Administrator", "Senior Database Administrator", "Data Scientist", "Senior Data Scientist", "Security Analyst",
     "Cloud Engineer", "DevOps Engineer", "Mobile Developer", "Senior Mobile Developer",
-    "Machine Learning Engineer", "UX/UI Designer", "Quality Engineer",
+    "Machine Learning Engineer", "UX/UI Designer", "Quality Engineer", "Project Manager"
     "IT Project Manager", "Senior Project Manager", "Technical Support Specialist", "IT Consultant",
     "Game Developer", "Computer Vision Engineer", "AI Research Scientist",
     "Data Engineer", "Senior Data Engineer", "Data Analyst", "Senior Data Analyst", "Full Stack Developer"
     ]
 
 REMOVED_JOBS = ["Blockchain Developer", "IoT Developer", "Ethical Hacker"]
-
-if REGION == 'EU':
-    COUNTRIES = EU_COUNTRIES
-elif REGION == 'NA':
-    COUNTRIES = NA_COUNTRIES + OCE_COUNTRIES
-elif REGION == 'SA':
-    COUNTRIES = SA_COUNTRIES
-elif REGION == 'ASIA':
-    COUNTRIES = ASIAN_COUNTRIES
-elif REGION == 'AF':
-    COUNTRIES = AF_COUNTRIES  
-elif REGION == 'GLOBAL' and FULL_LOAD:
-    COUNTRIES = EU_COUNTRIES + NA_COUNTRIES + OCE_COUNTRIES + SA_COUNTRIES + ASIAN_COUNTRIES + AF_COUNTRIES
-       
+ 
 
 if ENV == 'DEV':
+    REGION = 'EU'
     JOBS = ["Data Engineer"]
     COUNTRIES = ["Portugal"]                      
 

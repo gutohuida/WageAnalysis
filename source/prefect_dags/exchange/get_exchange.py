@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 CONNECTION_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/wageanalysis"
 
-EXCHANGE_CURRENCY = ["USD", "BRL"]
+EXCHANGE_CURRENCY = ["USD", "BRL", "EUR"]
 EXCHANGE_API = [(f"https://open.er-api.com/v6/latest/{x}", x) for x in EXCHANGE_CURRENCY]
 
 @task

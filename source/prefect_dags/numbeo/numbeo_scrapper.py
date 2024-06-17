@@ -30,7 +30,9 @@ FULL_LOAD = os.environ.get('FULL_LOAD')
 
 DAY_OF_WEEK = datetime.today().weekday()
 
-if DAY_OF_WEEK == 6:
+if FULL_LOAD == True:
+    REGION = 'GLOBAL'  
+elif DAY_OF_WEEK == 6:
     REGION = 'EU'
 elif DAY_OF_WEEK == 0:
     REGION = 'NA'
@@ -39,9 +41,7 @@ elif DAY_OF_WEEK == 1:
 elif DAY_OF_WEEK == 2:
     REGION = 'ASIA'
 elif DAY_OF_WEEK == 3:            
-    REGION = 'AF'
-else:
-    REGION = 'GLOBAL'
+    REGION = 'AF' 
 
 MAIN_URL = os.environ.get('MAIN_URL')
 
@@ -71,7 +71,7 @@ elif REGION == 'GLOBAL' and FULL_LOAD:
 
 if ENV == 'DEV':
     COUNTRY = "Portugal" 
-    COUNTRIES = EU_COUNTRIES     
+    COUNTRIES = NA_COUNTRIES + OCE_COUNTRIES    
 
 @task
 def init_driver():
@@ -150,14 +150,19 @@ def scrap_numbeo(driver, engine):
 
         try:
             country_button = driver.find_element(By.XPATH, f"//a[contains(text(), '{country}')]")
+            time.sleep(2)
+            logging.info(f'Button to click: {country_button}')
             country_button.click()
-        except Exception as e:
+            logging.info('After sleep on country click')
+        except Exception as e:            
             logging.warning('Country not found!')
             logging.error(e)
+            continue
 
+        logging.info('Getting page source')
         page = driver.page_source
         soup = BeautifulSoup(page, 'html.parser')
-
+        logging.debug('Source extracted')
         try:
             summary_df = scrap_summary(soup, country)
             details_df = scrap_details(soup, country)
@@ -181,10 +186,13 @@ def numbeo_scapper(retries=3, retry_delay_seconds=5, log_prints=True):
     
 
 if __name__ == '__main__':
-    numbeo_scapper.serve(
-        name="scrapp-numbeo-living-cost",
-        cron="00 22 * * 0-4",
-        tags=["scrapper", "living-cost-analysis"],
-        description="Scrap numbeo daily.",
-        version="living-cost-analysis/deployment",
-    )
+    if ENV == 'PROD':
+        numbeo_scapper.serve(
+            name="scrapp-numbeo-living-cost",
+            cron="00 22 * * 0-4",
+            tags=["scrapper", "living-cost-analysis"],
+            description="Scrap numbeo daily.",
+            version="living-cost-analysis/deployment",
+        )
+    else:
+        numbeo_scapper()    
